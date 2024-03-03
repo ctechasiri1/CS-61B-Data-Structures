@@ -1,19 +1,28 @@
 package byow.Core;
 
 
+
+
 import byow.TileEngine.TETile;
 import byow.TileEngine.Tileset;
 
 
-import java.util.ArrayList;
-import java.util.HashSet;
+
+
+import java.util.*;
+
+
 
 
 public class Hallway {
 
+
+
+
     private static double distanceBetweenRooms(int x1, int y1, int x2, int y2) {
         return Math.abs(x1 - x2) + Math.abs(y1 - y2);
     }
+
 
     private static void connectRooms(TETile[][] tiles, Room room1, Room room2) {
         //Get the center of each room
@@ -22,9 +31,13 @@ public class Hallway {
         int room2CenterX = room2.getCenterX();
         int room2CenterY = room2.getCenterY();
 
+
         //Connects room 1 and room 2 together
         int currentX = room1CenterX;
         int currentY = room1CenterY;
+
+
+
 
         while (currentX != room2CenterX) {
             tiles[currentX][currentY] = Tileset.FLOOR;
@@ -38,6 +51,9 @@ public class Hallway {
         }
     }
 
+
+
+
     public static void findAndConnectShortestDistance(TETile[][] tiles, ArrayList<Room> rooms) {
         // Keep track of connected rooms
         HashSet<Room> connectedRooms = new HashSet<>();
@@ -45,33 +61,66 @@ public class Hallway {
         Room startRoom = rooms.get(0);
         connectedRooms.add(startRoom);
 
-        while (connectedRooms.size() < rooms.size()) {
-            Room closestRoom1 = null;
-            Room closestRoom2 = null;
-            double shortestDistance = Double.MAX_VALUE;
 
-            for (Room room1 : connectedRooms) {
-                for (Room room2 : rooms) {
-                    if (connectedRooms.contains(room2)) {
-                        // Skip already connected room
-                        continue;
-                    }
-                    double distance = distanceBetweenRooms(room1.getCenterX(), room1.getCenterY(),
-                            room2.getCenterX(), room2.getCenterY());
+        // Create a mapping of rooms to their distance from the start room
+        HashMap<Room, Double> distanceMap = new HashMap<>();
+        for (Room room : rooms) {
+            if (room != startRoom) {
+                distanceMap.put(room, Double.MAX_VALUE);
+            }
+        }
 
-                    if (distance < shortestDistance) {
-                        shortestDistance = distance;
-                        closestRoom1 = room1;
-                        closestRoom2 = room2;
+
+        // Create a mapping of rooms to their previous room in the shortest path
+        HashMap<Room, Room> previousMap = new HashMap<>();
+
+
+        // Initialize the distance of the start room to 0
+        distanceMap.put(startRoom, 0.0);
+
+
+        // Use a priority queue to store rooms based on their distance from the start room
+        PriorityQueue<Room> pq = new PriorityQueue<>(Comparator.comparingDouble(distanceMap::get));
+        pq.add(startRoom);
+
+
+        while (!pq.isEmpty()) {
+            Room currentRoom = pq.poll();
+            connectedRooms.add(currentRoom);
+
+
+            // If all rooms are connected, exit early
+            if (connectedRooms.size() == rooms.size()) {
+                break;
+            }
+
+
+            for (Room room : rooms) {
+                if (!connectedRooms.contains(room)) {
+                    double distance = distanceBetweenRooms(currentRoom.getCenterX(),
+                            currentRoom.getCenterY(), room.getCenterX(), room.getCenterY());
+                    double totalDistance = distanceMap.get(currentRoom) + distance;
+                    if (totalDistance < distanceMap.get(room)) {
+                        distanceMap.put(room, totalDistance);
+                        previousMap.put(room, currentRoom);
+                        pq.add(room);
                     }
                 }
             }
+        }
 
-            if (closestRoom1 != null && closestRoom2 != null) {
-                connectRooms(tiles, closestRoom1, closestRoom2);
-                connectedRooms.add(closestRoom2);
+
+        // Connect the rooms based on the shortest path
+        for (Room room : rooms) {
+            if (room != startRoom) {
+                Room previousRoom = previousMap.get(room);
+                connectRooms(tiles, previousRoom, room);
             }
         }
     }
 }
+
+
+
+
 

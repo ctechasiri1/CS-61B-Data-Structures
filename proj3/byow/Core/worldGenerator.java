@@ -1,22 +1,20 @@
 package byow.Core;
 
 
+
+
 import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
 import byow.TileEngine.Tileset;
-import org.junit.jupiter.api.MethodOrderer;
-
-
-import javax.management.relation.RelationNotification;
-import javax.swing.text.Position;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Random;
 
 
+
+
 public class worldGenerator extends Hallway {
-    private static int width = 60;
-    private static int height = 30;
+    public static int width = 60;
+    public static int height = 30;
     private static long seed;
     private static final int minRoomNum = 15;
     private static final int maxRoomNum = 10;
@@ -25,10 +23,13 @@ public class worldGenerator extends Hallway {
     private static final int minRoomHeight = 3;
     private static final int maxRoomHeight = 10;
     private static Random rand;
+    private static Player player;
+
 
     public static void buildWorld(TETile[][] tiles, Long currSeed) {
         seed = currSeed;
         rand = new Random(seed);
+
 
         ArrayList<Room> rooms = new ArrayList<>();
         for (int i = 0; i < width; i++) {
@@ -37,6 +38,7 @@ public class worldGenerator extends Hallway {
             }
         }
 
+
         //Generate random rooms
         int numRooms = rand.nextInt(maxRoomNum) + minRoomNum;
         for (int i = 0; i < numRooms; i++) {
@@ -44,18 +46,33 @@ public class worldGenerator extends Hallway {
             int roomWidth = rand.nextInt(maxRoomWidth) + minRoomWidth;
             int roomHeight = rand.nextInt(maxRoomHeight) + minRoomHeight;
             int roomX = rand.nextInt(width - roomWidth);
-            int roomY = rand.nextInt(height - roomHeight);
+            int roomY = rand.nextInt(height - roomHeight - 2);
             //Create and store the room object into the list
             Room room = new Room(roomX, roomY, roomHeight, roomWidth);
             if (!checkOccupied(tiles, room)) {
                 makeSquareFloor(tiles, room);
                 rooms.add(room);
             }
-
         }
         findAndConnectShortestDistance(tiles, rooms);
         generateWalls(tiles);
+        int flowerX, flowerY;
+        Room startRoom1 = rooms.get(rand.nextInt(rooms.size()));
+        flowerX = startRoom1.getX() + rand.nextInt(startRoom1.getWidth());
+        flowerY = startRoom1.getY() + rand.nextInt(startRoom1.getHeight());
+        if (tiles[flowerX][flowerY] == Tileset.FLOOR) {
+            tiles[flowerX][flowerY] = Tileset.FLOWER;
+        }
+
+
+        // initialize player object (from ChatGPT)
+        Room startRoom = rooms.get(rand.nextInt(rooms.size()));
+        int playerX = startRoom.getX() + rand.nextInt(startRoom.getWidth());
+        int playerY = startRoom.getY() + rand.nextInt(startRoom.getHeight());
+        player = new Player(playerX, playerY);
+        tiles[playerX][playerY] = Tileset.AVATAR;
     }
+
 
     private static void makeSquareFloor(TETile[][] tiles, Room room) {
         for (int i = room.getX(); i < room.getX() + room.getWidth(); i++) {
@@ -68,6 +85,7 @@ public class worldGenerator extends Hallway {
             }
         }
     }
+
 
     public static boolean checkOccupied(TETile[][] tiles, Room room1) {
         Room currRoom = room1;
@@ -83,6 +101,7 @@ public class worldGenerator extends Hallway {
         }
         return false;
     }
+
 
     public static void generateWalls(TETile[][] tiles) {
         for (int x = 0; x < width; x++) {
@@ -102,10 +121,10 @@ public class worldGenerator extends Hallway {
                             tiles[x][y + 1] = Tileset.WALL;
                         }
                     }
-                    if ((tiles[x][y] == tiles[width-1][y] || tiles[x][y] == tiles[0][y]) && tiles[x][y] == Tileset.FLOOR){
+                    if ((tiles[x][y] == tiles[width - 1][y] || tiles[x][y] == tiles[0][y]) && tiles[x][y] == Tileset.FLOOR){
                         tiles[x][y] = Tileset.WALL;
                     }
-                    if ((tiles[x][y] == tiles[x][height-1] || tiles[x][y] == tiles[x][0]) && tiles[x][y] == Tileset.FLOOR){
+                    if ((tiles[x][y] == tiles[x][height - 1] || tiles[x][y] == tiles[x][0]) && tiles[x][y] == Tileset.FLOOR){
                         tiles[x][y] = Tileset.WALL;
                     }
                 }
@@ -113,19 +132,26 @@ public class worldGenerator extends Hallway {
         }
     }
 
+
     public static void main(String[] args) {
         TERenderer ter = new TERenderer();
-        ter.initialize(width, height);
-        TETile[][] tiles = new TETile[width][height];
+        Engine engine = new Engine();
+     //   TETile[][] game = engine.interactWithInputString("n123456s:q");
+      //  ter.renderFrame(game);
 
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                tiles[i][j] = Tileset.NOTHING;
-            }
-        }
-        long seed = 1824155662;
+        engine.interactWithKeyboard();
+
+
+        /*long seed = 123;
         buildWorld(tiles, seed);
         ter.renderFrame(tiles);
+
+         */
+
     }
 }
+
+
+
+
 
